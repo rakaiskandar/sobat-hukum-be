@@ -2,7 +2,7 @@ from django.db import models
 from cases.models import Cases  # Import model Cases dari file yang berbeda
 
 class Documents(models.Model):
-    case = models.OneToOneField(
+    case_id = models.ForeignKey(
         Cases,
         on_delete=models.CASCADE,
         related_name='document'  # related_name yang sesuai untuk akses dari model Cases
@@ -15,7 +15,7 @@ class Documents(models.Model):
         return self.file_name
 
 class CasesUpdate(models.Model):
-    document = models.ForeignKey(
+    document_id = models.ForeignKey(
         Documents,
         on_delete=models.CASCADE,
         related_name='updates'  # related_name untuk akses dari model Documents

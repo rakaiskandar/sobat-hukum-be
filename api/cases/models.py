@@ -13,7 +13,7 @@ class Cases(models.Model):
         on_delete=models.CASCADE,
         related_name='cases'  # related_name untuk akses dari model Lawyers
     )
-    users_id = models.ForeignKey(
+    user_id = models.ForeignKey(
         Users,
         on_delete=models.CASCADE,
         related_name='cases'  # related_name untuk akses dari model Users
@@ -30,7 +30,6 @@ class Cases(models.Model):
         ],
         null=True  # Status dapat bernilai NULL
     )
-    is_public = models.BooleanField(default=False)  # Apakah kasus bersifat publik
     is_anonymous = models.BooleanField(default=False)  # Apakah kasus bersifat anonim
 
     def __str__(self):
