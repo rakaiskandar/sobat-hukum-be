@@ -1,5 +1,5 @@
 from django.db import models
-from cases.models import Cases  # Import model Cases dari file yang berbeda
+from api.cases.models import Cases  # Import model Cases dari file yang berbeda
 
 class Documents(models.Model):
     case_id = models.ForeignKey(

@@ -1,5 +1,5 @@
 from django.db import models
-from users.models import Lawyers, Users, Clients
+from api.users.models import Lawyers, Users, Clients
 
 # Create your models here.
 class Cases(models.Model):

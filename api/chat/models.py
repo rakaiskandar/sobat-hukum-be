@@ -1,6 +1,6 @@
 from django.db import models
-from cases.models import Cases
-from users.models import Clients, Lawyers, Users
+from api.cases.models import Cases
+from api.users.models import Clients, Lawyers, Users
 
 class Conversations(models.Model):
     case_id = models.OneToOneField(Cases, on_delete=models.CASCADE, related_name="conversations_case")
