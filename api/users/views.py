@@ -1,15 +1,14 @@
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from .permissions import IsAdminPermission
-from django.contrib.auth import authenticate
 from .serializers import RegisterSerializer, LoginSerializer
 import logging
 logger = logging.getLogger(__name__)
-
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -25,20 +24,56 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    http_method_names = ['post']  # Hanya izinkan POST
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({
-                "token": token.key,
+
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": {
+                "id": user.id,
                 "username": user.username,
-                "role": user.role,  # Tambahkan role di respons
-            }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class AdminOnlyView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminPermission]
+                "email": user.email,
+                "role": user.role,
+            },
+        }, status=status.HTTP_200_OK)
+
+class VerifyTokenView(APIView):
+    """
+    Endpoint to verify if an access token is valid.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        token = request.data.get("token")
+
+        if not token:
+            return Response({"detail": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Decode the token to verify its validity
+            AccessToken(token)
+            return Response({"detail": "Token is valid."}, status=status.HTTP_200_OK)
+        except TokenError as e:
+            return Response({"detail": str(e)}, status=401)
+
+class UserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response({"message": "You are an admin!"})
+        user = request.user
+        return Response({'username': user.username, 'role': user.role})
+
+# class AdminOnlyView(APIView):
+#     permission_classes = [IsAuthenticated, IsAdminPermission]
+
+#     def get(self, request):
+#         return Response({"message": "You are an admin!"})
