@@ -2,11 +2,12 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from .permissions import IsAdminPermission
-from .serializers import RegisterSerializer, LoginSerializer
+from .serializers import RegisterSerializer, LoginSerializer, ClientSerializer, LawyerSerializer
+from .models import Clients, Lawyers, Users
 import logging
 logger = logging.getLogger(__name__)
 
@@ -77,3 +78,31 @@ class UserInfoView(APIView):
 
 #     def get(self, request):
 #         return Response({"message": "You are an admin!"})
+
+class CreateClientView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if user.role != 'client':
+            return Response({'detail': 'You are not authorized to add client data.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = ClientSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=user)  # Tautkan data ke user yang login
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CreateLawyerView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if user.role != 'lawyer':
+            return Response({'detail': 'You are not authorized to add lawyer data.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = LawyerSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=user)  # Tautkan data ke user yang login
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.users.models import Users
+from api.users.models import Users, Lawyers, Clients
 from django.contrib.auth import authenticate
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -35,3 +35,13 @@ class LoginSerializer(serializers.Serializer):
 
         data["user"] = user
         return data
+    
+class ClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Clients
+        fields = ['nik', 'is_verified']
+
+class LawyerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lawyers
+        fields = ['license_number', 'specialization', 'experience_years', 'availability', 'is_verified']
