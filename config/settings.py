@@ -97,6 +97,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,               # Token refresh lama di-blacklist
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
+    'USER_ID_FIELD': 'user_id',
 }
 
 # Database

@@ -39,7 +39,7 @@ class CreateCaseView(APIView):
 
         # Ambil data dari request
         data = request.data.copy()
-        data['client_id'] = client.id  # Set client_id berdasarkan user yang login
+        data['client_id'] = client.client_id  # Set client_id berdasarkan user yang login
         
         # Validasi dan simpan data menggunakan serializer
         serializer = CaseSerializer(data=data)

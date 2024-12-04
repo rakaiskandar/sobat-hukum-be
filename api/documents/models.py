@@ -1,9 +1,9 @@
 from django.db import models
 from api.cases.models import Cases  # Import model Cases dari file yang berbeda
-from api.common.utils import generate_unique_id
+from api.common.fields import UniqueStringIDField
 
 class Documents(models.Model):
-    document_id = models.CharField(primary_key=True, default=generate_unique_id, editable=False, max_length=8, unique=True)
+    document_id = UniqueStringIDField(primary_key=True)  
     case_id = models.ForeignKey(
         Cases,
         on_delete=models.CASCADE,
@@ -17,7 +17,7 @@ class Documents(models.Model):
         return self.file_name
 
 class CasesUpdate(models.Model):
-    case_update_id = models.CharField(primary_key=True, default=generate_unique_id, editable=False, max_length=8, unique=True)
+    case_update_id = UniqueStringIDField(primary_key=True)  
     document_id = models.ForeignKey(
         Documents,
         on_delete=models.CASCADE,
