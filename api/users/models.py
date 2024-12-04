@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from api.common.utils import generate_unique_id
 
 class Users(AbstractUser):
     ROLE_CHOICES = [
@@ -11,7 +12,7 @@ class Users(AbstractUser):
         ('L', 'laki-laki'),
         ('P', 'perempuan'),
     ]
-
+    user_id = models.CharField(primary_key=True, default=generate_unique_id, editable=False, max_length=8, unique=True)
     email = models.EmailField(unique=True)  # Email unik
     phone_number = models.CharField(max_length=15, unique=True)  # Nomor telepon unik
     role = models.CharField(max_length=10, choices=ROLE_CHOICES) 
@@ -35,7 +36,7 @@ class Lawyers(models.Model):
         ('available', 'Available'),
         ('unavailable', 'Unavailable'),
     ]
-
+    lawyer_id = models.CharField(primary_key=True, default=generate_unique_id, editable=False, max_length=8, unique=True)
     user = models.OneToOneField('Users', on_delete=models.CASCADE, related_name='lawyer')  # FK ke Users
     license_number = models.CharField(max_length=50, null=True, unique=True)  # Nomor lisensi unik
     specialization = models.CharField(max_length=100, null=True)  # Spesialisasi hukum
@@ -52,6 +53,7 @@ class Lawyers(models.Model):
 
 
 class Clients(models.Model):
+    client_id = models.CharField(primary_key=True, default=generate_unique_id, editable=False, max_length=8, unique=True)
     user = models.OneToOneField('Users', on_delete=models.CASCADE, related_name='client')  # FK ke Users
     nik = models.CharField(max_length=16, unique=True, null=True)  # Nomor Identitas unik
     is_verified = models.BooleanField(default=False)  # Status verifikasi

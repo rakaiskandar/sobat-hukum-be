@@ -26,8 +26,5 @@ BASE_URL = 'api/v1/'
 urlpatterns = [
     path('admin/', admin.site.urls),
     path(BASE_URL, include('api.users.urls')),
-    path('api/', include('api.cases.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    # Endpoint untuk refresh token
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path(BASE_URL, include('api.cases.urls')),
 ]

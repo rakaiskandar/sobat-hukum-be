@@ -5,7 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
-from .permissions import IsAdminPermission
+from api.common.permissions import IsAdminPermission
 from .serializers import RegisterSerializer, LoginSerializer, ClientSerializer, LawyerSerializer
 from .models import Clients, Lawyers, Users
 import logging

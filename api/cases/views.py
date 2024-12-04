@@ -6,12 +6,12 @@ from .models import Cases
 from api.users.models import Lawyers, Clients
 from .serializers import CaseSerializer
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsAdminOrReadOnly
+from api.common.permissions import IsAdminPermission
 
 class CaseViewSet(APIView):
     queryset = Cases.objects.all()  # Semua data kasus
     serializer_class = CaseSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsAdminPermission]
 
     # Filtering kasus berdasarkan status
     def get_queryset(self):
