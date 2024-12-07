@@ -5,24 +5,27 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
-from api.common.permissions import IsAdminPermission
 from .serializers import RegisterSerializer, LoginSerializer, ClientSerializer, LawyerSerializer
-from .models import Clients, Lawyers, Users
+from .models import Clients, Lawyers
 import logging
 logger = logging.getLogger(__name__)
+from django.db import transaction  # Ensure atomic operations
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
-    http_method_names = ['post']  # Hanya izinkan POST
+    http_method_names = ['post']  # Only allow POST
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         logger.debug(f"Request data: {request.data}")
         serializer = RegisterSerializer(data=request.data)
+        
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+        transaction.set_rollback(True)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class LoginView(APIView):
     permission_classes = [AllowAny]
     http_method_names = ['post']  # Hanya izinkan POST
@@ -36,14 +39,27 @@ class LoginView(APIView):
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
 
+        is_verified = None
+        if user.role == "client":
+            client = Clients.objects.get(user=user.user_id)
+            is_verified = client.is_verified
+        elif user.role == "lawyer":
+            lawyer = Lawyers.objects.get(user=user.user_id)
+            is_verified = lawyer.is_verified
+        else:
+            is_verified = True
+            
         return Response({
             "refresh": str(refresh),
             "access": str(refresh.access_token),
             "user": {
                 "id": user.user_id,
+                "name": user.name,
                 "username": user.username,
+                "profile": user.profile_picture,
                 "email": user.email,
                 "role": user.role,
+                "is_verified": is_verified,
             },
         }, status=status.HTTP_200_OK)
 
@@ -73,36 +89,46 @@ class UserInfoView(APIView):
         user = request.user
         return Response({'username': user.username, 'role': user.role})
 
-# class AdminOnlyView(APIView):
-#     permission_classes = [IsAuthenticated, IsAdminPermission]
-
-#     def get(self, request):
-#         return Response({"message": "You are an admin!"})
-
 class CreateClientView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
+    http_method_names = ['post']  # Only allow POST
 
-    def post(self, request):
-        user = request.user
-        if user.role != 'client':
-            return Response({'detail': 'You are not authorized to add client data.'}, status=status.HTTP_403_FORBIDDEN)
-        
-        serializer = ClientSerializer(data=request.data)
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        logger.debug(f"Request data for client: {request.data}")
+
+        # Add the user to the request data
+        client_data = request.data.copy()
+        client_data['user'] = request.user.user_id
+
+        serializer = ClientSerializer(data=client_data)
+
         if serializer.is_valid():
-            serializer.save(user=user)  # Tautkan data ke user yang login
+            # Save the client and link it to the authenticated user
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        transaction.set_rollback(True)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class CreateLawyerView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
+    http_method_names = ['post']  # Only allow POST
 
-    def post(self, request):
-        user = request.user
-        if user.role != 'lawyer':
-            return Response({'detail': 'You are not authorized to add lawyer data.'}, status=status.HTTP_403_FORBIDDEN)
-        
-        serializer = LawyerSerializer(data=request.data)
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        logger.debug(f"Request data for lawyer: {request.data}")
+
+        # Add the user to the request data
+        lawyer_data = request.data.copy()
+        lawyer_data['user'] = request.user.user_id
+
+        serializer = LawyerSerializer(data=lawyer_data)
+
         if serializer.is_valid():
-            serializer.save(user=user)  # Tautkan data ke user yang login
+            # Save the client and link it to the authenticated user
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        transaction.set_rollback(True)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
