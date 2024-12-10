@@ -8,12 +8,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Users
-        fields = ['name', 'username', 'email', 'password', 'role', 'phone_number']
+        fields = ['name', 'username', 'age', 'gender', 'email', 'password', 'role', 'phone_number']
 
     def create(self, validated_data):
         user = Users.objects.create_user(
             name=validated_data['name'],
             username=validated_data['username'],
+            age=validated_data['age'],
+            gender=validated_data['gender'],
             email=validated_data['email'],
             password=validated_data['password'],
             role=validated_data['role'],
@@ -39,9 +41,9 @@ class LoginSerializer(serializers.Serializer):
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clients
-        fields = ['nik', 'is_verified']
+        fields = ['user', 'nik', 'is_verified']
 
 class LawyerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lawyers
-        fields = ['license_number', 'specialization', 'experience_years', 'availability', 'is_verified']
+        fields = ['user', 'license_number', 'specialization', 'experience_years', 'availability', 'is_verified']
