@@ -41,17 +41,9 @@ class LoginSerializer(serializers.Serializer):
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clients
-        fields = ['client_id', 'nik', 'is_verified']
-
-    def create(self, validated_data):
-        validated_data['is_verified'] = False  # Default: belum diverifikasi
-        return super().create(validated_data)
+        fields = ['user', 'nik', 'is_verified']
 
 class LawyerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lawyers
-        fields = ['lawyer_id', 'license_number', 'specialization', 'experience_years', 'availability', 'is_verified']
-
-    def create(self, validated_data):
-        validated_data['is_verified'] = False  # Default: belum diverifikasi
-        return super().create(validated_data)
+        fields = ['user', 'license_number', 'specialization', 'experience_years', 'availability', 'is_verified']

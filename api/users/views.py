@@ -91,21 +91,24 @@ class UserInfoView(APIView):
         return Response({'username': user.username, 'role': user.role})
 
 class CreateClientView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
+    http_method_names = ['post']
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        logger.debug(f"Request data for client: {request.data}")
 
-    def post(self, request):
-        user = request.user
-        if user.role != 'client':
-            return Response({'detail': 'You are not authorized to add client data.'}, status=status.HTTP_403_FORBIDDEN)
+        # Add the user to the request data
+        client_data = request.data.copy()
+        client_data['user'] = request.user.user_id
+        serializer = ClientSerializer(data=client_data)
 
-        # Hapus 'is_verified' dari data yang diinput oleh klien
-        data = request.data.copy()
-        data.pop('is_verified', None)
-
-        serializer = ClientSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=user)  # Tautkan data ke user yang login
+            # Save the client and link it to the authenticated user
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        transaction.set_rollback(True)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyClientView(APIView):
@@ -125,21 +128,23 @@ class VerifyClientView(APIView):
 
     
 class CreateLawyerView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
+    http_method_names = ['post']  # Only allow POST
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        logger.debug(f"Request data for lawyer: {request.data}")
+        # Add the user to the request data
+        lawyer_data = request.data.copy()
+        lawyer_data['user'] = request.user.user_id
+        serializer = LawyerSerializer(data=lawyer_data)
 
-    def post(self, request):
-        user = request.user
-        if user.role != 'lawyer':
-            return Response({'detail': 'You are not authorized to add lawyer data.'}, status=status.HTTP_403_FORBIDDEN)
-
-        # Hapus 'is_verified' dari data yang diinput oleh pengacara
-        data = request.data.copy()
-        data.pop('is_verified', None)
-
-        serializer = LawyerSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=user)  # Tautkan data ke user yang login
+            # Save the client and link it to the authenticated user
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        transaction.set_rollback(True)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyLawyerView(APIView):
