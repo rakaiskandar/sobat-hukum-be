@@ -14,4 +14,5 @@ urlpatterns = [
     path('lawyers/verify/<str:lawyer_id>/', VerifyLawyerView.as_view(), name='verify_lawyer'),
     path('clients/details/', GetClientDetailsByUserIdView.as_view(), name='get-client-details-by-user-id'),
     path('lawyers/details/', GetLawyerDetailsByUserIdView.as_view(), name='get-lawyer-details-by-user-id'),
+    path('users/', GetUserView.as_view(), name='get_user'),
 ]

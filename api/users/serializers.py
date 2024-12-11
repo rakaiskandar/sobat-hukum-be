@@ -47,3 +47,8 @@ class LawyerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lawyers
         fields = ['user', 'license_number', 'specialization', 'experience_years', 'availability', 'is_verified']
+        
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ['user_id', 'name', 'email', 'phone_number', 'age', 'gender', 'role']

@@ -2,11 +2,11 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from rest_framework import status, permissions
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
-from .serializers import RegisterSerializer, LoginSerializer, ClientSerializer, LawyerSerializer
-from .models import Clients, Lawyers
+from .serializers import *
+from .models import Clients, Lawyers, Users
 from api.common.permissions import IsAdminPermission
 import logging
 logger = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ class RegisterView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     http_method_names = ['post']  # Hanya izinkan POST
+    
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
@@ -39,16 +40,6 @@ class LoginView(APIView):
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
-
-        # is_verified = None
-        # if user.role == "client":
-        #     client = Clients.objects.get(user=user.user_id)
-        #     is_verified = client.is_verified
-        # elif user.role == "lawyer":
-        #     lawyer = Lawyers.objects.get(user=user.user_id)
-        #     is_verified = lawyer.is_verified
-        # else:
-        #     is_verified = True
             
         return Response({
             "refresh": str(refresh),
@@ -60,7 +51,6 @@ class LoginView(APIView):
                 "profile": user.profile_picture,
                 "email": user.email,
                 "role": user.role,
-                # "is_verified": is_verified,
             },
         }, status=status.HTTP_200_OK)
 
@@ -202,3 +192,21 @@ class GetLawyerDetailsByUserIdView(APIView):
             )
         except Lawyers.DoesNotExist:
             return Response({"error": "Lawyer not found for the provided user"}, status=status.HTTP_404_NOT_FOUND)
+        
+class GetUserView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminPermission]
+    
+    def get(self, request):
+        try:
+            # Query the users from the database
+            users = Users.objects.exclude(role="admin")
+
+            # Serialize the users
+            serializer = UserSerializer(users, many=True)
+
+            # Return the serialized data
+            return Response(serializer.data, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+        
+        
