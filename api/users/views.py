@@ -183,7 +183,7 @@ class GetLawyerDetailsByUserIdView(APIView):
             return Response(
                 {
                     "lawyer_id": lawyer.lawyer_id,
-                    "licence_number": lawyer.licence_number,
+                    "license_number": lawyer.license_number,
                     "specialization": lawyer.specialization,
                     "experience_years": lawyer.experience_years,
                     "is_verified": lawyer.is_verified,
