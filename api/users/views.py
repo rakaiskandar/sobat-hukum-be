@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from .serializers import *
 from .models import Clients, Lawyers, Users
+from django.db.models import Case, When, Value, BooleanField
 from api.common.permissions import IsAdminPermission
 import logging
 logger = logging.getLogger(__name__)
@@ -34,12 +35,23 @@ class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
+        
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
+            
+        is_verified = None
+        if user.role == "client":
+            client = Clients.objects.get()
+            is_verified = client.is_verified
+        elif user.role == "lawyer":
+            lawyer = Lawyers.objects.get()
+            is_verified = lawyer.is_verified
+        else:
+            is_verified = True
             
         return Response({
             "refresh": str(refresh),
@@ -51,6 +63,7 @@ class LoginView(APIView):
                 "profile": user.profile_picture,
                 "email": user.email,
                 "role": user.role,
+                "is_verified": is_verified
             },
         }, status=status.HTTP_200_OK)
 
@@ -102,11 +115,13 @@ class CreateClientView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyClientView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminPermission]  # Hanya admin yang bisa mengakses
-
-    def patch(self, request, client_id):
+    permission_classes = [IsAdminPermission]  # Hanya admin yang bisa mengakses
+    http_method_names = ["patch"]
+    
+    @transaction.atomic
+    def patch(self, request, user_id):
         try:
-            client = Clients.objects.get(client_id=client_id)
+            client = Clients.objects.get(user_id=user_id)
         except Clients.DoesNotExist:
             return Response({'detail': 'Client not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -114,8 +129,8 @@ class VerifyClientView(APIView):
         client.is_verified = True
         client.save()
 
-        return Response({'detail': f'Client {client_id} verified successfully.'}, status=status.HTTP_200_OK)
-
+        transaction.set_rollback(True)
+        return Response({'detail': f'Client {user_id} verified successfully.'}, status=status.HTTP_200_OK)
     
 class CreateLawyerView(APIView):
     permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
@@ -138,11 +153,13 @@ class CreateLawyerView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyLawyerView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminPermission]  # Hanya admin yang bisa mengakses
-
-    def patch(self, request, lawyer_id):
+    permission_classes = [IsAdminPermission]  # Hanya admin yang bisa mengakses
+    http_method_names = ["patch"]
+    
+    @transaction.atomic
+    def patch(self, request, user_id):
         try:
-            lawyer = Lawyers.objects.get(lawyer_id=lawyer_id)
+            lawyer = Lawyers.objects.get(user_id=user_id)
         except Lawyers.DoesNotExist:
             return Response({'detail': 'Lawyer not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -150,7 +167,8 @@ class VerifyLawyerView(APIView):
         lawyer.is_verified = True
         lawyer.save()
 
-        return Response({'detail': f'Lawyer {lawyer_id} verified successfully.'}, status=status.HTTP_200_OK)
+        transaction.set_rollback(True)
+        return Response({'detail': f'Lawyer {user_id} verified successfully.'}, status=status.HTTP_200_OK)
 
 class GetClientDetailsByUserIdView(APIView):
     permission_classes = [IsAuthenticated]
@@ -198,15 +216,55 @@ class GetUserView(APIView):
     
     def get(self, request):
         try:
-            # Query the users from the database
-            users = Users.objects.exclude(role="admin")
+            # Query the users excluding admins and prefetch related models
+            users = Users.objects.exclude(role="admin").prefetch_related('lawyer', 'client')
+
+            # Annotate the `is_verified` field based on the related models
+            users = users.annotate(
+                is_verified=Case(
+                    When(role="client", client__is_verified=True, then=Value(True)),
+                    When(role="lawyer", lawyer__is_verified=True, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                )
+            )
+            
+            # Serialize the users
+            serializer = UserSerializer(users, many=True)
+            
+            # Return the serialized data
+            return Response(serializer.data, status=200)
+        
+        except Exception as e:
+            # Log the exception if needed for debugging purposes
+            return Response({"error": str(e)}, status=500)
+        
+class GetUserMeView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            # Query the users excluding admins and prefetch related models
+            users = Users.objects.exclude(role="admin").prefetch_related('lawyer', 'client').get(user_id=request.user.user_id)
+
+            # Annotate the `is_verified` field based on the related models
+            users = users.annotate(
+                is_verified=Case(
+                    When(role="client", client__is_verified=True, then=Value(True)),
+                    When(role="lawyer", lawyer__is_verified=True, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                )
+            )
 
             # Serialize the users
             serializer = UserSerializer(users, many=True)
 
             # Return the serialized data
             return Response(serializer.data, status=200)
+        
         except Exception as e:
+            # Log the exception if needed for debugging purposes
             return Response({"error": str(e)}, status=500)
         
         

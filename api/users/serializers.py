@@ -49,6 +49,16 @@ class LawyerSerializer(serializers.ModelSerializer):
         fields = ['user', 'license_number', 'specialization', 'experience_years', 'availability', 'is_verified']
         
 class UserSerializer(serializers.ModelSerializer):
+    is_verified = serializers.BooleanField(read_only=True)  # Make it read-only
+    
     class Meta:
         model = Users
-        fields = ['user_id', 'name', 'email', 'phone_number', 'age', 'gender', 'role']
+        fields = ['user_id', 'name', 'username', 'email', 'phone_number', 'age', 'gender', 'role', 'is_verified']
+
+    def get_is_verified(self, obj):
+        # We assume `obj` is the `Users` instance. Now we use the dynamic logic
+        if obj.role == 'client':
+            return obj.client.is_verified if obj.client else False
+        elif obj.role == 'lawyer':
+            return obj.lawyer.is_verified if obj.lawyer else False
+        return False
