@@ -45,10 +45,10 @@ class LoginView(APIView):
             
         is_verified = None
         if user.role == "client":
-            client = Clients.objects.get()
+            client = Clients.objects.get(user_id = user.user_id)
             is_verified = client.is_verified
         elif user.role == "lawyer":
-            lawyer = Lawyers.objects.get()
+            lawyer = Lawyers.objects.get(user_id = user.user_id)
             is_verified = lawyer.is_verified
         else:
             is_verified = True
@@ -123,13 +123,13 @@ class VerifyClientView(APIView):
         try:
             client = Clients.objects.get(user_id=user_id)
         except Clients.DoesNotExist:
+            transaction.set_rollback(True)
             return Response({'detail': 'Client not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Verifikasi client
         client.is_verified = True
         client.save()
 
-        transaction.set_rollback(True)
         return Response({'detail': f'Client {user_id} verified successfully.'}, status=status.HTTP_200_OK)
     
 class CreateLawyerView(APIView):
@@ -161,13 +161,13 @@ class VerifyLawyerView(APIView):
         try:
             lawyer = Lawyers.objects.get(user_id=user_id)
         except Lawyers.DoesNotExist:
+            transaction.set_rollback(True)
             return Response({'detail': 'Lawyer not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Verifikasi lawyer
         lawyer.is_verified = True
         lawyer.save()
 
-        transaction.set_rollback(True)
         return Response({'detail': f'Lawyer {user_id} verified successfully.'}, status=status.HTTP_200_OK)
 
 class GetClientDetailsByUserIdView(APIView):
