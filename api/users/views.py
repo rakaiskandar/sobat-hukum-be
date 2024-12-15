@@ -35,7 +35,6 @@ class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
-        
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
@@ -45,10 +44,10 @@ class LoginView(APIView):
             
         is_verified = None
         if user.role == "client":
-            client = Clients.objects.get()
+            client = Clients.objects.get(user_id=user.user_id)
             is_verified = client.is_verified
         elif user.role == "lawyer":
-            lawyer = Lawyers.objects.get()
+            lawyer = Lawyers.objects.get(user_id=user.user_id)
             is_verified = lawyer.is_verified
         else:
             is_verified = True
@@ -86,13 +85,6 @@ class VerifyTokenView(APIView):
         except TokenError as e:
             return Response({"detail": str(e)}, status=401)
 
-class UserInfoView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        return Response({'username': user.username, 'role': user.role})
-
 class CreateClientView(APIView):
     permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
     http_method_names = ['post']
@@ -123,13 +115,13 @@ class VerifyClientView(APIView):
         try:
             client = Clients.objects.get(user_id=user_id)
         except Clients.DoesNotExist:
+            transaction.set_rollback(True)
             return Response({'detail': 'Client not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Verifikasi client
         client.is_verified = True
         client.save()
 
-        transaction.set_rollback(True)
         return Response({'detail': f'Client {user_id} verified successfully.'}, status=status.HTTP_200_OK)
     
 class CreateLawyerView(APIView):
@@ -161,13 +153,13 @@ class VerifyLawyerView(APIView):
         try:
             lawyer = Lawyers.objects.get(user_id=user_id)
         except Lawyers.DoesNotExist:
+            transaction.set_rollback(True)
             return Response({'detail': 'Lawyer not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Verifikasi lawyer
         lawyer.is_verified = True
         lawyer.save()
 
-        transaction.set_rollback(True)
         return Response({'detail': f'Lawyer {user_id} verified successfully.'}, status=status.HTTP_200_OK)
 
 class GetClientDetailsByUserIdView(APIView):
@@ -188,8 +180,7 @@ class GetClientDetailsByUserIdView(APIView):
             )
         except Clients.DoesNotExist:
             return Response({"error": "Client not found for the provided user"}, status=status.HTTP_404_NOT_FOUND)
-
-
+        
 class GetLawyerDetailsByUserIdView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -241,30 +232,60 @@ class GetUserView(APIView):
         
 class GetUserMeView(APIView):
     permission_classes = [IsAuthenticated]
+    http_method_names = ["get"]
     
     def get(self, request):
         try:
-            # Query the users excluding admins and prefetch related models
-            users = Users.objects.exclude(role="admin").prefetch_related('lawyer', 'client').get(user_id=request.user.user_id)
+            # Fetch the current user's details
+            user = Users.objects.prefetch_related('lawyer', 'client').get(user_id=request.user.user_id)
 
-            # Annotate the `is_verified` field based on the related models
-            users = users.annotate(
-                is_verified=Case(
-                    When(role="client", client__is_verified=True, then=Value(True)),
-                    When(role="lawyer", lawyer__is_verified=True, then=Value(True)),
-                    default=Value(False),
-                    output_field=BooleanField(),
-                )
+            # Annotate the `is_verified` field:
+            # - Admin users are always considered verified.
+            # - Otherwise, it depends on the associated client or lawyer model.
+            user.is_verified = (
+                True if user.role == "admin" else 
+                user.client.is_verified if user.role == "client" else 
+                user.lawyer.is_verified if user.role == "lawyer" else False
             )
 
-            # Serialize the users
-            serializer = UserSerializer(users, many=True)
+            # Serialize the user
+            serializer = UserSerializer(user)
 
-            # Return the serialized data
+            # Return serialized user profile
             return Response(serializer.data, status=200)
         
         except Exception as e:
-            # Log the exception if needed for debugging purposes
+        # Log unexpected exceptions and return 500
             return Response({"error": str(e)}, status=500)
-        
-        
+
+class UpdateProfile(APIView):
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["patch"]
+    
+    def patch(self, request):
+        try:
+            # Get the authenticated user
+            user = request.user
+
+            # Update general user fields
+            user_serializer = UpdateUserSerializer(user, data=request.data, partial=True)
+            if user_serializer.is_valid():
+                user_serializer.save()
+
+                # Role-based update
+                if user.role == "client":
+                    client = user.client
+                    client_serializer = UpdateClientSerializer(client, data=request.data, partial=True)
+                    if client_serializer.is_valid():
+                        client_serializer.save()
+                elif user.role == "lawyer":
+                    lawyer = user.lawyer
+                    lawyer_serializer = UpdateLawyerSerializer(lawyer, data=request.data, partial=True)
+                    if lawyer_serializer.is_valid():
+                        lawyer_serializer.save()
+
+                return Response(user_serializer.data, status=status.HTTP_200_OK)
+            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

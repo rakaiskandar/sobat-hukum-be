@@ -15,4 +15,5 @@ urlpatterns = [
     path('lawyers/details/', GetLawyerDetailsByUserIdView.as_view(), name='get-lawyer-details-by-user-id'),
     path('users/', GetUserView.as_view(), name='get_user'),
     path('users/me/', GetUserMeView.as_view(), name='get_user_me'),
+    path('users/update/', UpdateProfile.as_view(), name='update_profile'),
 ]

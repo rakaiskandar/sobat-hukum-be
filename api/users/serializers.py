@@ -53,7 +53,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Users
-        fields = ['user_id', 'name', 'username', 'email', 'phone_number', 'age', 'gender', 'role', 'is_verified']
+        fields = ['user_id', 'name', 'username', 'profile_picture', 'email', 'phone_number', 'age', 'gender', 'role', 'is_verified']
 
     def get_is_verified(self, obj):
         # We assume `obj` is the `Users` instance. Now we use the dynamic logic
@@ -62,3 +62,28 @@ class UserSerializer(serializers.ModelSerializer):
         elif obj.role == 'lawyer':
             return obj.lawyer.is_verified if obj.lawyer else False
         return False
+    
+class UpdateClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Clients
+        fields = ["nik"]
+
+class UpdateLawyerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lawyers
+        fields = ["license_number", "specialization", "experience_years"]
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ["name", "usernmae", "email", "phone_number", "age", "gender", "profile_picture"]
+
+    def validate_email(self, value):
+        if Users.objects.exclude(pk=self.instance.pk).filter(email=value).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value
+
+    def validate_phone_number(self, value):
+        if Users.objects.exclude(pk=self.instance.pk).filter(phone_number=value).exists():
+            raise serializers.ValidationError("This phone number is already in use.")
+        return value
