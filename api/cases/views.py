@@ -41,7 +41,8 @@ class CreateCaseView(APIView):
         # Ambil data dari request
         data = request.data.copy()
         data['client_id'] = client.client_id  # Set client_id berdasarkan user yang login
-        
+        data['created_by'] = user.name
+        data['user_id'] = user.user_id
         # Validasi dan simpan data menggunakan serializer
         serializer = CaseSerializer(data=data)
         if serializer.is_valid():
@@ -101,6 +102,22 @@ class OpenCasesView(APIView):
         else:
             return Response({"message": "No cases available without a lawyer."}, status=200)
         
+class CasesAssignView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Query untuk kasus dengan lawyer_id kosong
+        lawyer_id = request.user.lawyer.lawyer_id
+
+        # Query untuk kasus dengan lawyer_id sesuai
+        assigned_cases = Cases.objects.filter(lawyer_id=lawyer_id)
+
+        if assigned_cases.exists():
+            serializer = CaseSerializer(assigned_cases, many=True)
+            return Response(serializer.data, status=200)
+        else:
+            return Response({"message": "No cases assigned to you."}, status=200)
+        
 class DeleteCaseView(APIView):
     permission_classes = [IsAdminPermission]  # Gunakan custom permission
 
@@ -115,3 +132,20 @@ class DeleteCaseView(APIView):
             )
         except Cases.DoesNotExist:
             return Response({"error": "Case not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class ListAllCasesView(APIView):
+    permission_classes = [IsAdminPermission]  # Hanya admin yang dapat mengakses
+
+    def get(self, request):
+        try:
+            # Ambil semua kasus dari database
+            cases = Cases.objects.all()
+
+            # Serialisasi data
+            serializer = CaseSerializer(cases, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": "An error occurred while fetching cases.", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

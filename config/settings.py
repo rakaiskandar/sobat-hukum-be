@@ -91,7 +91,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,                  # Refresh token baru dibuat saat token di-refresh
     'BLACKLIST_AFTER_ROTATION': True,               # Token refresh lama di-blacklist
