@@ -27,4 +27,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path(BASE_URL, include('api.users.urls')),
     path(BASE_URL, include('api.cases.urls')),
+    path(BASE_URL, include('api.documents.urls')),
 ]

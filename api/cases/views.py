@@ -149,3 +149,18 @@ class ListAllCasesView(APIView):
                 {"error": "An error occurred while fetching cases.", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+class CaseHistoryView(APIView):
+    def get(self, request, client_id, *args, **kwargs):
+        # Ambil kasus berdasarkan client_id
+        cases = Cases.objects.filter(client_id=client_id).order_by('-created_at')
+
+        # Jika tidak ada kasus
+        if not cases.exists():
+            return Response(
+                {"message": "No cases found for the provided client_id."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Serialisasi data kasus
+        serializer = CaseSerializer(cases, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
