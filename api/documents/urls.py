@@ -7,6 +7,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     # path('cases/', CaseViewSet.as_view(), name='view_case'),
     path('document/', DocumentViewSet.as_view(), name='document_view'),
+    path('documents/<str:case_id>/', DocumentByCaseView.as_view(), name='documents-by-case'),
+    path('case-detail/<str:case_id>/', CaseDetailView.as_view(), name='case-detail'),
+    path('case-update/', CreateCaseUpdateView.as_view(), name='create-case-update'),
 ]
 
 if settings.DEBUG:
