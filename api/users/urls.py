@@ -1,5 +1,7 @@
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from .views import *
 
 urlpatterns = [
@@ -11,8 +13,10 @@ urlpatterns = [
     path('clients/verify/<str:user_id>/', VerifyClientView.as_view(), name='verify_client'),
     path('lawyers/create/', CreateLawyerView.as_view(), name='create_lawyer'),
     path('lawyers/verify/<str:user_id>/', VerifyLawyerView.as_view(), name='verify_lawyer'),
-    path('clients/details/', GetClientDetailsByUserIdView.as_view(), name='get-client-details-by-user-id'),
-    path('lawyers/details/', GetLawyerDetailsByUserIdView.as_view(), name='get-lawyer-details-by-user-id'),
     path('users/', GetUserView.as_view(), name='get_user'),
     path('users/me/', GetUserMeView.as_view(), name='get_user_me'),
+    path('users/update/', UpdateProfile.as_view(), name='update_profile'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
