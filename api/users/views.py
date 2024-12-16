@@ -307,3 +307,13 @@ class UpdateProfile(APIView):
         
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class LawyerListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        lawyers = Lawyers.objects.filter(experience_years__gt=5)  # Filter lawyers dengan pengalaman lebih dari 5 tahun
+        serializer = LawyerSerializer(lawyers, many=True)  # Serialize data
+        return Response(serializer.data)
+
+    
