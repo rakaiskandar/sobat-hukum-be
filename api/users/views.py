@@ -129,6 +129,7 @@ class VerifyClientView(APIView):
             client = Clients.objects.get(user_id=user_id)
         except Clients.DoesNotExist:
             transaction.set_rollback(True)
+            transaction.set_rollback(True)
             return Response({'detail': 'Client not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Verifikasi client
@@ -166,6 +167,7 @@ class VerifyLawyerView(APIView):
         try:
             lawyer = Lawyers.objects.get(user_id=user_id)
         except Lawyers.DoesNotExist:
+            transaction.set_rollback(True)
             transaction.set_rollback(True)
             return Response({'detail': 'Lawyer not found.'}, status=status.HTTP_404_NOT_FOUND)
 
