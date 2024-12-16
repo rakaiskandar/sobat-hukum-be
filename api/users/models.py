@@ -21,7 +21,7 @@ class Users(AbstractUser):
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, null=True)  # Jenis kelamin
     age = models.PositiveIntegerField(null=True)  # Usia
     password = models.CharField(max_length=128)  # Password (hashed)
-    profile_picture = models.CharField(max_length=128, null=True)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)  # Waktu pembuatan
