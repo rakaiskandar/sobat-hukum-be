@@ -311,6 +311,22 @@ class UpdateProfile(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class LawyerListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        lawyers = Lawyers.objects.select_related('user').filter(experience_years__gt=5)  # Filter lawyers dengan pengalaman lebih dari 5 tahun
+        data = [
+            {
+                "lawyer_id": lawyer.lawyer_id,
+                "profile_picture": lawyer.user.profile_picture,
+                "name": lawyer.user.name,
+                "email": lawyer.user.email
+            }
+            for lawyer in lawyers
+        ]
+        return Response(data, status=200)
+
+class LawyerListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
