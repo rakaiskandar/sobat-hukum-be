@@ -363,7 +363,7 @@ class UserDetailView(APIView):
             return Response({"error": "User tidak ditemukan"}, status=status.HTTP_404_NOT_FOUND)
 
 class UserCountView(APIView):
-    permission_classes = [IsAdminPermission]
+    permission_classes = [IsAdminPermission, IsAuthenticated]
 
     def get(self, request):
         try:
