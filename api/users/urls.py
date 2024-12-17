@@ -19,6 +19,3 @@ urlpatterns = [
     path('users/me/', GetUserMeView.as_view(), name='get_user_me'),
     path('users/update/', UpdateProfile.as_view(), name='update_profile'),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

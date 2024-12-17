@@ -5,6 +5,7 @@ from .models import Documents
 from api.cases.models import Cases  # Pastikan model Cases diimpor
 from .serializers import *
 from rest_framework import generics, status
+from django.http import FileResponse
 
 class DocumentViewSet(APIView):
     def post(self, request, *args, **kwargs):
@@ -47,12 +48,40 @@ class DocumentViewSet(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class DocumentByCaseView(generics.ListAPIView):
-    serializer_class = DocumentSerializer
+class DocumentByCaseView(APIView):
+    def get(self, request, case_id):
+        try:
+            # Validasi keberadaan case_id
+            case = Cases.objects.get(case_id=case_id)
 
-    def get_queryset(self):
-        case_id = self.kwargs['case_id']
-        return Documents.objects.filter(case_id=case_id)
+            # Ambil semua dokumen terkait case_id
+            documents = Documents.objects.filter(case_id=case)
+            if not documents.exists():
+                return Response({"message": "No documents found for this case."}, status=status.HTTP_404_NOT_FOUND)
+
+            # Serialisasi data dokumen
+            serializer = DocumentSerializer(documents, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Cases.DoesNotExist:
+            return Response({"error": "Invalid Case ID"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class DocumentPreviewView(APIView):
+    def get(self, request, document_id):
+        try:
+            # Ambil dokumen berdasarkan document_id
+            document = Documents.objects.get(document_id=document_id)
+
+            # Pastikan file adalah PDF
+            if not document.file_path.name.endswith('.pdf'):
+                return Response({"error": "This document is not a PDF file."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Kirim respons sebagai file PDF
+            return FileResponse(document.file_path.open('rb'), content_type='application/pdf')
+
+        except Documents.DoesNotExist:
+            return Response({"error": "Document not found"}, status=status.HTTP_404_NOT_FOUND)
 
 # View untuk menampilkan CaseDetail berdasarkan case_id
 class CaseDetailView(generics.ListAPIView):
