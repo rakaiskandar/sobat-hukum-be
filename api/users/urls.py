@@ -14,6 +14,7 @@ urlpatterns = [
     path('lawyers/create/', CreateLawyerView.as_view(), name='create_lawyer'),
     path('lawyers/verify/<str:user_id>/', VerifyLawyerView.as_view(), name='verify_lawyer'),
     path('lawyers/public/', LawyerListView.as_view(), name='lawyer-list'),
+    path('lawyers/list/', LawyerListView.as_view(), name='lawyer_list'),
     path('users/', GetUserView.as_view(), name='get_user'),
     path('users/me/', GetUserMeView.as_view(), name='get_user_me'),
     path('users/update/', UpdateProfile.as_view(), name='update_profile'),

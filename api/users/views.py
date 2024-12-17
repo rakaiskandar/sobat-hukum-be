@@ -229,6 +229,7 @@ class GetUserMeView(APIView):
                 role_based_data = {
                     "nik": user.client.nik,
                     "is_verified": user.client.is_verified,
+                    "client_id": user.client.client_id,
                 }
             elif user.role == "lawyer" and hasattr(user, "lawyer"):
                 role_based_data = {
@@ -236,6 +237,7 @@ class GetUserMeView(APIView):
                     "specialization": user.lawyer.specialization,
                     "experience_years": user.lawyer.experience_years,
                     "is_verified": user.lawyer.is_verified,
+                    "lawyer_id": user.lawyer.lawyer_id,
                 }
 
             # Serialize the base user data
@@ -312,8 +314,29 @@ class LawyerListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        lawyers = Lawyers.objects.filter(experience_years__gt=5)  # Filter lawyers dengan pengalaman lebih dari 5 tahun
-        serializer = LawyerSerializer(lawyers, many=True)  # Serialize data
-        return Response(serializer.data)
+        lawyers = Lawyers.objects.select_related('user').filter(experience_years__gt=5)  # Filter lawyers dengan pengalaman lebih dari 5 tahun
+        data = [
+            {
+                "lawyer_id": lawyer.lawyer_id,
+                "profile_picture": lawyer.user.profile_picture,
+                "name": lawyer.user.name,
+                "email": lawyer.user.email
+            }
+            for lawyer in lawyers
+        ]
+        return Response(data, status=200)
 
-    
+class LawyerListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Ambil semua data lawyer dengan user terkait
+        lawyers = Lawyers.objects.select_related('user').all()
+        data = [
+            {
+                "lawyer_id": lawyer.lawyer_id,
+                "name": lawyer.user.name,
+            }
+            for lawyer in lawyers
+        ]
+        return Response(data, status=200)

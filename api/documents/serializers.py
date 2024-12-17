@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.documents.models import Documents
+from api.documents.models import Documents, CasesUpdate
 from api.cases.models import Cases  # Import Case model for validation
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -21,3 +21,18 @@ class DocumentSerializer(serializers.ModelSerializer):
         if not value.name.endswith(('.png', '.jpg', '.pdf', '.docx')):  # Allowed types
             raise serializers.ValidationError("Unsupported file type.")
         return value
+
+class CaseUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CasesUpdate
+        fields = ['case_update_id', 'document_id', 'update_detail', 'status', 'updated_at']
+        read_only_fields = ['case_update_id', 'updated_at']  # Field yang tidak bisa diubah
+
+
+# Serializer untuk CaseDetail yang menggabungkan Documents dan CasesUpdate
+class CaseDetailSerializer(serializers.ModelSerializer):
+    updates = CaseUpdateSerializer(many=True, read_only=True)  # Ambil list updates berdasarkan related_name
+
+    class Meta:
+        model = Documents
+        fields = ['document_id', 'file_name', 'file_path', 'uploaded_at', 'updates']
