@@ -10,10 +10,8 @@ from .models import Clients, Lawyers, Users
 from django.db.models import Case, When, Value, BooleanField
 from api.common.permissions import IsAdminPermission
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.conf import settings
 import logging
-import os
-from datetime import datetime
+from django.utils.encoding import smart_str  
 
 logger = logging.getLogger(__name__)
 from django.db import transaction  # Ensure atomic operations
@@ -310,33 +308,43 @@ class UpdateProfile(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-class LawyerListView(APIView):
+class LawyerListPublicView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request):
-        lawyers = Lawyers.objects.select_related('user').filter(experience_years__gt=5)  # Filter lawyers dengan pengalaman lebih dari 5 tahun
-        data = [
-            {
-                "lawyer_id": lawyer.lawyer_id,
-                "profile_picture": lawyer.user.profile_picture,
-                "name": lawyer.user.name,
-                "email": lawyer.user.email
-            }
-            for lawyer in lawyers
-        ]
-        return Response(data, status=200)
+    def get(self, request, *args, **kwargs):
+        try:
+            lawyers = Lawyers.objects.select_related('user').filter(experience_years__gt=5).all()  # Filter lawyers dengan pengalaman lebih dari 5 tahun
+            data = [
+                {
+                    "lawyer_id": lawyer.lawyer_id,
+                    "profile_picture": lawyer.user.profile_picture.url if lawyer.user.profile_picture else None,
+                    "name": smart_str(lawyer.user.name, encoding='utf-8'),
+                    "email": smart_str(lawyer.user.email, encoding='utf-8'),
+                    "specialization": smart_str(lawyer.specialization, encoding='utf-8'),
+                }
+                for lawyer in lawyers
+            ]
+            return Response(data, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
 class LawyerListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         # Ambil semua data lawyer dengan user terkait
-        lawyers = Lawyers.objects.select_related('user').all()
-        data = [
-            {
-                "lawyer_id": lawyer.lawyer_id,
-                "name": lawyer.user.name,
-            }
-            for lawyer in lawyers
-        ]
-        return Response(data, status=200)
+        try:
+            lawyers = Lawyers.objects.select_related('user').all()
+            data = [
+                {
+                    "lawyer_id": lawyer.lawyer_id,
+                    "profile_picture": lawyer.user.profile_picture.url if lawyer.user.profile_picture else None,
+                    "name": smart_str(lawyer.user.name, encoding='utf-8'),
+                    "email": smart_str(lawyer.user.email, encoding='utf-8'),
+                    "specialization": smart_str(lawyer.specialization, encoding='utf-8'),
+                }
+                for lawyer in lawyers
+            ]
+            return Response(data, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
