@@ -19,4 +19,5 @@ urlpatterns = [
     path('users/me/', GetUserMeView.as_view(), name='get_user_me'),
     path('users/update/', UpdateProfile.as_view(), name='update_profile'),
     path('users/<str:user_id>/', UserDetailView.as_view(), name='user-detail'),
+    path('users/count/', UserCountView.as_view(), name='count_user'),
 ]

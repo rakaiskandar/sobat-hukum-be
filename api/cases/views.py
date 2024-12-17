@@ -164,3 +164,17 @@ class CaseHistoryView(APIView):
         # Serialisasi data kasus
         serializer = CaseSerializer(cases, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CaseCountView(APIView):
+    permission_classes = [IsAdminPermission]
+
+    def get(self, request):
+        try:
+            # Count all cases
+            total_cases = Cases.objects.count()
+
+            # Return the total case count in a simplified structure
+            return Response({"case_count": total_cases}, status=200)
+
+        except Exception as e:
+            return Response({"detail": f"An error occurred: {str(e)}"}, status=500)

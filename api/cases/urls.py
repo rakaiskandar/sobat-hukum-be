@@ -11,4 +11,5 @@ urlpatterns = [
     path('cases/<str:case_id>/delete/', DeleteCaseView.as_view(), name='delete_case'),
     path('cases/all/', ListAllCasesView.as_view(), name='list_all_cases'),
     path('cases/history/<str:client_id>/', CaseHistoryView.as_view(), name='case_history'),
+    path('cases/count/', CaseCountView.as_view(), name='case_count'),
 ]

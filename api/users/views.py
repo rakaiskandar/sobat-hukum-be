@@ -12,6 +12,7 @@ from api.common.permissions import IsAdminPermission
 from rest_framework.parsers import MultiPartParser, FormParser
 import logging
 from django.utils.encoding import smart_str  
+from django.db.models import Count
 
 logger = logging.getLogger(__name__)
 from django.db import transaction  # Ensure atomic operations
@@ -360,3 +361,25 @@ class UserDetailView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Users.DoesNotExist:
             return Response({"error": "User tidak ditemukan"}, status=status.HTTP_404_NOT_FOUND)
+
+class UserCountView(APIView):
+    permission_classes = [IsAdminPermission]
+
+    def get(self, request):
+        try:
+            # Count the number of users with role 'lawyer' and 'client'
+            user_counts = (
+                Users.objects.filter(role__in=["lawyer", "client"])  # Filter for lawyer and client roles
+                .values("role")  # Group by role field
+                .annotate(count=Count("user_id"))  # Count users for each role
+            )
+
+            # Prepare the data to only include lawyer and client
+            formatted_data = []
+            for role in ["lawyer", "client"]:
+                count = next((entry["count"] for entry in user_counts if entry["role"] == role), 0)
+                formatted_data.append({"role": role.capitalize(), "count": count})
+
+            return Response(formatted_data, status=200)
+        except Exception as e:
+            return Response({"detail": f"An error occurred: {str(e)}"}, status=500)
