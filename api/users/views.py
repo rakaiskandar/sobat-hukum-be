@@ -348,3 +348,15 @@ class LawyerListView(APIView):
             return Response(data, status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+class UserDetailView(APIView):
+    permission_classes = [IsAuthenticated]  # Hanya untuk user yang sudah login
+
+    def get(self, request, user_id):
+        try:
+            # Ambil user berdasarkan user_id
+            user = Users.objects.get(user_id=user_id)
+            serializer = UserDetailSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Users.DoesNotExist:
+            return Response({"error": "User tidak ditemukan"}, status=status.HTTP_404_NOT_FOUND)

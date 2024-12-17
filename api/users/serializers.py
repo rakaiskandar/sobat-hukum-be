@@ -109,3 +109,14 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         if Users.objects.exclude(pk=self.instance.pk).filter(phone_number=value).exists():
             raise serializers.ValidationError("This phone number is already in use.")
         return value
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    lawyer = LawyerSerializer(read_only=True)  # Include lawyer data
+    client = ClientSerializer(read_only=True)  # Include client data
+
+    class Meta:
+        model = Users
+        fields = [
+            'user_id', 'email', 'phone_number', 'role', 'username', 'name', 'gender', 
+            'age', 'profile_picture', 'created_at', 'updated_at', 'lawyer', 'client'
+        ]
